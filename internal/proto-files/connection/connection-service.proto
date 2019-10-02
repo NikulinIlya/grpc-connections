@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+package connection;
+
+option go_package = "gRPC/connection";
+
+import "click.proto";
+
+service ConnectionService {
+    rpc SetConnection (Connection) returns (AddConnectionResponse);
+
+    rpc SendClick (connection.Click) returns (ClickResponse);
+}
+
+message Connection {
+    int64 Id = 1;
+    string address = 2;
+    string port = 3;
+}
+
+message AddConnectionResponse {
+    Connection addedConnection = 1;
+    Error error = 2;
+}
+
+message ClickResponse {
+    Click click = 1;
+    Error error = 2;
+}
+
+message Error {
+    string code = 1;
+    string message = 2;
+}

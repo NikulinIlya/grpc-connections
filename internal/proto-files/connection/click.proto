@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package connection;
+
+option go_package = "gRPC/connection";
+
+message Click {
+    uint32 TdsId  = 1;
+    uint64 Id = 2;
+    uint32 Ip = 3;
+    bytes Query = 4;
+}
