@@ -7,7 +7,17 @@ option go_package = "grpc/connection";
 import "click.proto";
 
 service ConnectionService {
+    // A simple RPC.
     rpc SendClick (ClickData) returns (ClickResponse);
+
+    // A server-to-client streaming RPC.
+    //rpc SendClickServerStream (ClickData) returns (stream ClickResponse);
+
+    // A client-to-server streaming RPC.
+    rpc SendClicksSequence (stream ClickData) returns (ClickSummary);
+
+    // A Bidirectional streaming RPC.
+    //rpc SendClickBidirectionalStream (stream ClickData) returns (stream ClickResponse);
 }
 
 message Connection {
@@ -31,4 +41,12 @@ message ClickData {
 message Error {
     string code = 1;
     string message = 2;
+}
+
+message ClickSummary {
+    // number of clicks received.
+    int32 click_count = 1;
+
+    // The duration in seconds.
+    int32 elapsed_time = 2;
 }
