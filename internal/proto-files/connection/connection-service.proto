@@ -7,8 +7,6 @@ option go_package = "grpc/connection";
 import "click.proto";
 
 service ConnectionService {
-    rpc SetConnection (Connection) returns (SetConnectionResponse);
-
     rpc SendClick (ClickData) returns (ClickResponse);
 }
 
@@ -16,11 +14,6 @@ message Connection {
     int64 Id = 1;
     string host = 2;
     string port = 3;
-}
-
-message SetConnectionResponse {
-    Connection addedConnection = 1;
-    Error error = 2;
 }
 
 message ClickResponse {
