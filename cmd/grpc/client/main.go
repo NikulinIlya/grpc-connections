@@ -4,22 +4,25 @@ import (
 	"context"
 	"fmt"
 	"google.golang.org/grpc"
+	"math/rand"
 	c "projects/grpc-connections/cmd/grpc/connections"
 	pb "projects/grpc-connections/internal/grpc/connection"
+	"time"
 )
 
 const CurrentConnectionNumber = 0
 
-func MakeClickModel(connection *pb.Connection) pb.ClickData {
+func MakeClickModel(connection *pb.Connection, Id int64) pb.ClickData {
 	clickModel := pb.ClickData{
-		Id: 1,
+		Id: Id,
 		Click: &pb.Click{
-			TdsId: 100,
-			Id:    50,
-			Ip:    10000,
+			TdsId: rand.Uint32(),
+			Id:    rand.Uint64(),
+			Ip:    rand.Uint32(),
 			Query: []byte{
-				10,
-				20,
+				byte(rand.Uint32()),
+				byte(rand.Uint32()),
+				byte(rand.Uint32()),
 			},
 		},
 		Connection: connection,
@@ -29,6 +32,8 @@ func MakeClickModel(connection *pb.Connection) pb.ClickData {
 }
 
 func main() {
+	rand.Seed(time.Now().UTC().UnixNano())
+
 	var connections [c.MaxServerConnectionsQuantity]*grpc.ClientConn
 
 	serverConnectionsData := c.GetServerConnectionsData()
@@ -60,13 +65,33 @@ func main() {
 		Port: serverConnectionsData[CurrentConnectionNumber].GetPort(),
 	}
 
-	clickModel := MakeClickModel(connection)
+	var clickModelArr [1000]pb.ClickData
 
-	if responseMessage, e := client.SendClick(context.Background(), &clickModel); e != nil {
-		panic(fmt.Sprintf("Was not able to send Click %v", e))
-	} else {
-		fmt.Println("Click Sent...")
-		fmt.Println("Response:", responseMessage)
-		fmt.Println("=============================")
+	for i := range [1000]int{} {
+		clickModelArr[i] = MakeClickModel(connection, int64(i))
 	}
+
+	fmt.Println("clickModelArr generated")
+
+	t0 := time.Now()
+	for range [1000]int{} {
+		//t1 := time.Now()
+
+		for i := range [1000]int{} {
+
+			//responseMessage
+			if _, e := client.SendClick(context.Background(), &clickModelArr[i]); e != nil {
+				panic(fmt.Sprintf("Was not able to send Click %v", e))
+			} else {
+				/*fmt.Println("Click Sent...")
+				fmt.Println("Response:", responseMessage)
+				fmt.Println("=============================")*/
+			}
+		}
+		//fmt.Printf("Elapsed time on %d: %v \n", j, time.Since(t1))
+	}
+
+	fmt.Printf("Sum Elapsed time: %v \n", time.Since(t0))
+	fmt.Printf("Average 1000 Send: %v \n", time.Since(t0)/1000)
+	fmt.Printf("Average one Send: %v \n", time.Since(t0)/1000000)
 }
