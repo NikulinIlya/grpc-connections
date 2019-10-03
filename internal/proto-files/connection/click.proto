@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package connection;
 
-option go_package = "gRPC/connection";
+option go_package = "grpc/connection";
 
 message Click {
     uint32 TdsId  = 1;
