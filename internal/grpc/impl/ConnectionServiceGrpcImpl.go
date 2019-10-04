@@ -4,7 +4,6 @@ import (
 	"context"
 	"io"
 	"projects/grpc-connections/internal/grpc/connection"
-	"time"
 )
 
 //ConnectionServiceGrpcImpl is a implementation of ConnectionService Grpc Service.
@@ -27,15 +26,12 @@ func (serviceImpl *ConnectionServiceGrpcImpl) SendClick(ctx context.Context, in 
 
 func (serviceImpl *ConnectionServiceGrpcImpl) SendClicksSequence(stream connection.ConnectionService_SendClicksSequenceServer) error {
 	var clicksCount int32
-	startTime := time.Now()
 
 	for {
 		_, err := stream.Recv()
 		if err == io.EOF {
-			endTime := time.Now()
 			return stream.SendAndClose(&connection.ClickSummary{
-				ClickCount:  clicksCount,
-				ElapsedTime: int32(endTime.Sub(startTime).Seconds()),
+				ClickCount: clicksCount,
 			})
 		}
 		if err != nil {

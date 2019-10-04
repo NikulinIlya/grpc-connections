@@ -46,7 +46,4 @@ message Error {
 message ClickSummary {
     // number of clicks received.
     int32 click_count = 1;
-
-    // The duration in seconds.
-    int32 elapsed_time = 2;
 }
