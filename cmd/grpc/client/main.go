@@ -10,7 +10,10 @@ import (
 	"time"
 )
 
-const CurrentConnectionNumber = 0
+const (
+	CurrentConnectionNumber = 0
+	ClickArraySize          = 1000
+)
 
 func MakeClickModel(connection *pb.Connection, Id int64) pb.ClickData {
 	clickModel := pb.ClickData{
@@ -29,6 +32,32 @@ func MakeClickModel(connection *pb.Connection, Id int64) pb.ClickData {
 	}
 
 	return clickModel
+}
+
+func runClickSend(client pb.ConnectionServiceClient, clickModelArr [ClickArraySize]pb.ClickData) {
+	fmt.Println("=============================")
+	fmt.Println("ClickSend started")
+	t0 := time.Now()
+	for range [1000]int{} {
+		//t1 := time.Now()
+
+		for i := range [1000]int{} {
+
+			//responseMessage
+			if _, e := client.SendClick(context.Background(), &clickModelArr[i]); e != nil {
+				panic(fmt.Sprintf("Was not able to send Click %v", e))
+			} else {
+				/*fmt.Println("Click Sent...")
+				fmt.Println("Response:", responseMessage)
+				fmt.Println("=============================")*/
+			}
+		}
+		//fmt.Printf("Elapsed time on %d: %v \n", j, time.Since(t1))
+	}
+
+	fmt.Printf("Sum Elapsed time: %v \n", time.Since(t0))
+	fmt.Printf("Average 1000 Send: %v \n", time.Since(t0)/1000)
+	fmt.Printf("Average one Send: %v \n", time.Since(t0)/1000000)
 }
 
 func main() {
@@ -65,33 +94,13 @@ func main() {
 		Port: serverConnectionsData[CurrentConnectionNumber].GetPort(),
 	}
 
-	var clickModelArr [1000]pb.ClickData
+	var clickModelArr [ClickArraySize]pb.ClickData
 
-	for i := range [1000]int{} {
+	for i := range [ClickArraySize]int{} {
 		clickModelArr[i] = MakeClickModel(connection, int64(i))
 	}
 
 	fmt.Println("clickModelArr generated")
 
-	t0 := time.Now()
-	for range [1000]int{} {
-		//t1 := time.Now()
-
-		for i := range [1000]int{} {
-
-			//responseMessage
-			if _, e := client.SendClick(context.Background(), &clickModelArr[i]); e != nil {
-				panic(fmt.Sprintf("Was not able to send Click %v", e))
-			} else {
-				/*fmt.Println("Click Sent...")
-				fmt.Println("Response:", responseMessage)
-				fmt.Println("=============================")*/
-			}
-		}
-		//fmt.Printf("Elapsed time on %d: %v \n", j, time.Since(t1))
-	}
-
-	fmt.Printf("Sum Elapsed time: %v \n", time.Since(t0))
-	fmt.Printf("Average 1000 Send: %v \n", time.Since(t0)/1000)
-	fmt.Printf("Average one Send: %v \n", time.Since(t0)/1000000)
+	runClickSend(client, clickModelArr)
 }
