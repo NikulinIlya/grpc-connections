@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"google.golang.org/grpc"
+	"log"
 	"math/rand"
 	c "projects/grpc-connections/cmd/grpc/connections"
 	pb "projects/grpc-connections/internal/grpc/connection"
@@ -15,7 +16,7 @@ const (
 	ClickArraySize          = 1000
 )
 
-func MakeClickModel(connection *pb.Connection, Id int64) pb.ClickData {
+func MakeClickModel(connection *pb.Connection, Id int64) *pb.ClickData {
 	clickModel := pb.ClickData{
 		Id: Id,
 		Click: &pb.Click{
@@ -31,10 +32,10 @@ func MakeClickModel(connection *pb.Connection, Id int64) pb.ClickData {
 		Connection: connection,
 	}
 
-	return clickModel
+	return &clickModel
 }
 
-func runClickSend(client pb.ConnectionServiceClient, clickModelArr [ClickArraySize]pb.ClickData) {
+func runClickSend(client pb.ConnectionServiceClient, clickModelArr [ClickArraySize]*pb.ClickData) {
 	fmt.Println("=============================")
 	fmt.Println("ClickSend started")
 	t0 := time.Now()
@@ -44,7 +45,7 @@ func runClickSend(client pb.ConnectionServiceClient, clickModelArr [ClickArraySi
 		for i := range [1000]int{} {
 
 			//responseMessage
-			if _, e := client.SendClick(context.Background(), &clickModelArr[i]); e != nil {
+			if _, e := client.SendClick(context.Background(), clickModelArr[i]); e != nil {
 				panic(fmt.Sprintf("Was not able to send Click %v", e))
 			} else {
 				/*fmt.Println("Click Sent...")
@@ -56,8 +57,37 @@ func runClickSend(client pb.ConnectionServiceClient, clickModelArr [ClickArraySi
 	}
 
 	fmt.Printf("Sum Elapsed time: %v \n", time.Since(t0))
-	fmt.Printf("Average 1000 Send: %v \n", time.Since(t0)/1000)
-	fmt.Printf("Average one Send: %v \n", time.Since(t0)/1000000)
+	fmt.Printf("Average 1000 Clicks send time: %v \n", time.Since(t0)/1000)
+	fmt.Printf("Average one Click send time: %v \n", time.Since(t0)/1000000)
+}
+
+func runClicksSequence(client pb.ConnectionServiceClient, clickModelArr [ClickArraySize]*pb.ClickData) {
+	fmt.Println("=============================")
+	fmt.Println("ClickSequence started")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Second)
+	defer cancel()
+
+	t0 := time.Now()
+
+	for range [1000]int{} {
+		stream, err := client.SendClicksSequence(ctx)
+		if err != nil {
+			log.Fatalf("%v.ClicksSequence(_) = _, %v", client, err)
+		}
+		for _, click := range clickModelArr {
+			if err := stream.Send(click); err != nil {
+				log.Fatalf("%v.Send(%v) = %v", stream, click, err)
+			}
+		}
+		_, err = stream.CloseAndRecv()
+		if err != nil {
+			log.Fatalf("%v.CloseAndRecv() got error %v, want %v", stream, err, nil)
+		}
+	}
+	fmt.Printf("Sum Elapsed time: %v \n", time.Since(t0))
+	fmt.Printf("Average 1000 Clicks send time: %v \n", time.Since(t0)/1000)
+	fmt.Printf("Average one Click send time: %v \n", time.Since(t0)/1000000)
 }
 
 func main() {
@@ -94,7 +124,7 @@ func main() {
 		Port: serverConnectionsData[CurrentConnectionNumber].GetPort(),
 	}
 
-	var clickModelArr [ClickArraySize]pb.ClickData
+	var clickModelArr [ClickArraySize]*pb.ClickData
 
 	for i := range [ClickArraySize]int{} {
 		clickModelArr[i] = MakeClickModel(connection, int64(i))
@@ -102,5 +132,6 @@ func main() {
 
 	fmt.Println("clickModelArr generated")
 
-	runClickSend(client, clickModelArr)
+	//runClickSend(client, clickModelArr)
+	runClicksSequence(client, clickModelArr)
 }
